@@ -51,7 +51,14 @@ export default function EventDetailPage() {
   );
 
   const handleShare = async () => {
-    const url = window.location.href;
+    const appUrlFromEnv =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      (process.env.NEXT_PUBLIC_VERCEL_URL
+        ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
+        : null);
+    const appBaseUrl = appUrlFromEnv || window.location.origin;
+    const url = new URL(`/events/${event.slug}`, appBaseUrl).toString();
+    const shareText = `${event.title} - ${url}`;
 
     // Try native Web Share API (works on mobile & some desktop browsers)
     if (navigator.share) {
@@ -69,28 +76,42 @@ export default function EventDetailPage() {
     }
 
     // Clipboard API fallback
+    let copied = false;
     try {
       await navigator.clipboard.writeText(url);
+      copied = true;
       toast.success("Link copied to clipboard! 🔗");
-      return;
     } catch {
       // Clipboard blocked — try textarea trick
     }
 
     // Last resort: textarea copy trick (works everywhere)
+    if (!copied) {
+      try {
+        const textarea = document.createElement("textarea");
+        textarea.value = url;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        copied = true;
+        toast.success("Link copied to clipboard! 🔗");
+      } catch {
+        toast.error("Could not copy link. Please copy it from the address bar.");
+      }
+    }
+
+    // Open WhatsApp (desktop & mobile will redirect appropriately) with prefilled text
     try {
-      const textarea = document.createElement("textarea");
-      textarea.value = url;
-      textarea.style.position = "fixed";
-      textarea.style.opacity = "0";
-      document.body.appendChild(textarea);
-      textarea.focus();
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-      toast.success("Link copied to clipboard! 🔗");
-    } catch {
-      toast.error("Could not copy link. Please copy it from the address bar.");
+      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(
+        shareText
+      )}`;
+      window.open(waUrl, "_blank");
+    } catch (err) {
+      // ignore
     }
   };
 
