@@ -307,14 +307,7 @@ export default function EventDetailPage() {
                   <Button className="w-full" disabled>
                     Event Full
                   </Button>
-                ) : isOrganizer ? (
-                  <Button
-                    className="w-full"
-                    onClick={() => router.push(`/events/${event.slug}/manage`)}
-                  >
-                    Manage Event
-                  </Button>
-                ) : (
+                ) : isOrganizer ? null : (
                   <Button className="w-full gap-2" onClick={handleRegister}>
                     <Ticket className="w-4 h-4" />
                     Register for Event
